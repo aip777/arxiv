@@ -194,6 +194,8 @@ def test_ingest_command_validates_arguments():
         call_command("ingest_arxiv", "--max-results", "0")
     with pytest.raises(CommandError):
         call_command("ingest_arxiv", "--page-size", "5000")
+    with pytest.raises(CommandError, match="Invalid arXiv category"):
+        call_command("ingest_arxiv", "--categories", "cs.AI OR all:x")
 
 
 def test_reset_command_requires_confirmation(make_record, monkeypatch):

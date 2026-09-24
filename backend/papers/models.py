@@ -14,11 +14,6 @@ class Category(TimeStampedModel):
     def __str__(self):
         return self.code
 
-    @property
-    def archive(self):
-        """Top-level archive, e.g. `cs` for `cs.AI`."""
-        return self.code.split(".", 1)[0]
-
 
 class Author(TimeStampedModel):
     """

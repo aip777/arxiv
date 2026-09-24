@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-from papers.services.arxiv_client import ArxivClientError
+from papers.services.arxiv_client import ArxivClientError, build_category_query
 from papers.services.ingestion import ingest_from_arxiv
 from rag.services.indexing import sync_index
 from rag.services.llm import LLMUnavailable
@@ -33,6 +33,10 @@ class Command(BaseCommand):
             raise CommandError("--max-results must be at least 1.")
         if not 1 <= page_size <= 2000:
             raise CommandError("--page-size must be between 1 and 2000.")
+        try:
+            build_category_query(categories)
+        except ValueError as exc:
+            raise CommandError(str(exc)) from exc
 
         self.stdout.write(f"Ingesting up to {max_results} papers from {', '.join(categories)} ...")
         try:

@@ -13,6 +13,7 @@ from basebox.models import ScheduledTaskLog
 from papers.models import Author, Category, Paper, PaperAuthor
 from papers.services.arxiv_client import ArxivClient
 from papers.services.parser import PaperRecord
+from rag.models import PaperEmbedding
 
 logger = logging.getLogger(__name__)
 
@@ -151,23 +152,19 @@ def ingest_from_arxiv(categories: list[str], max_results: int, page_size: int,
                 logger.info("Incremental run reached already-known papers; stopping early.")
                 break
     except Exception as exc:
-        task_log.json_meta["stats"] = stats.as_dict()
-        task_log.save(update_fields=["json_meta"])
-        task_log.mark_failed(f"{exc} ({stats})")
         logger.error("arXiv ingestion failed after partial progress: %s (%s)", exc, stats)
+        task_log.json_meta["stats"] = stats.as_dict()
+        task_log.finish(ScheduledTaskLog.Status.FAILED, f"{exc} ({stats})")
         raise
 
     task_log.json_meta["stats"] = stats.as_dict()
-    task_log.save(update_fields=["json_meta"])
-    task_log.mark_success(str(stats))
+    task_log.finish(ScheduledTaskLog.Status.SUCCESS, str(stats))
     logger.info("arXiv ingestion finished: %s", stats)
     return stats
 
 
 def reset_dataset() -> dict[str, int]:
     """Delete every paper, author and category. Embeddings go with their papers (CASCADE)."""
-    from rag.models import PaperEmbedding
-
     with transaction.atomic():
         counts = {
             "embeddings": PaperEmbedding.objects.count(),
@@ -175,7 +172,6 @@ def reset_dataset() -> dict[str, int]:
             "authors": Author.objects.count(),
             "categories": Category.objects.count(),
         }
-        PaperEmbedding.objects.all().delete()
         Paper.objects.all().delete()
         Author.objects.all().delete()
         Category.objects.all().delete()

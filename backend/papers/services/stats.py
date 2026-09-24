@@ -1,5 +1,5 @@
 """
-Aggregations for the charting API. All counting happens in PostgreSQL.
+Aggregations for the charting API. All counting happens in the database.
 
 Category counts use every category a paper is listed under (not only its
 primary one), since cross-listing is how arXiv expresses topic overlap.

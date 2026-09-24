@@ -6,6 +6,7 @@ unhappy it answers with 429/503, and sometimes with 406 from its CDN, so those
 are retried with exponential backoff.
 """
 import logging
+import re
 import time
 from collections.abc import Iterator
 
@@ -20,6 +21,8 @@ RETRYABLE_STATUS = {406, 429, 500, 502, 503, 504}
 USER_AGENT = "arxiv-rag-ingest/1.0"
 # arXiv occasionally returns an empty page mid-way through a result set; a retry usually fixes it.
 EMPTY_PAGE_RETRIES = 3
+# e.g. cs.AI, stat.ML, hep-th, astro-ph.CO
+CATEGORY_RE = re.compile(r"^[a-z-]+(\.[A-Za-z-]+)?$")
 
 
 class ArxivClientError(Exception):
@@ -30,6 +33,9 @@ def build_category_query(categories: list[str]) -> str:
     categories = [c.strip() for c in categories if c and c.strip()]
     if not categories:
         raise ValueError("At least one category is required.")
+    invalid = [c for c in categories if not CATEGORY_RE.match(c)]
+    if invalid:
+        raise ValueError(f"Invalid arXiv category: {', '.join(invalid)}")
     return " OR ".join(f"cat:{category}" for category in categories)
 
 
@@ -61,7 +67,8 @@ class ArxivClient:
             try:
                 response = self.session.get(self.base_url, params=params, timeout=self.timeout)
             except requests.RequestException as exc:
-                error = f"network error: {exc}"
+                logger.debug("arXiv request error: %s", exc)
+                error = f"network error: {type(exc).__name__}"
             else:
                 if response.status_code == 200:
                     return response.text
@@ -78,14 +85,14 @@ class ArxivClient:
                            error, backoff, attempt + 1, self.max_retries)
             self._sleep(backoff)
 
-    def fetch_page(self, query: str, start: int, max_results: int,
-                   sort_by="lastUpdatedDate", sort_order="descending") -> FeedPage:
+    def fetch_page(self, query: str, start: int, max_results: int) -> FeedPage:
+        # Newest updates first, so new and revised papers are always at the front.
         params = {
             "search_query": query,
             "start": start,
             "max_results": max_results,
-            "sortBy": sort_by,
-            "sortOrder": sort_order,
+            "sortBy": "lastUpdatedDate",
+            "sortOrder": "descending",
         }
         try:
             return parse_feed(self._get(params))

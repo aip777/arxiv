@@ -54,8 +54,15 @@ def make_client(responses, **kwargs):
 
 def test_build_category_query():
     assert build_category_query(["cs.AI", " cs.LG "]) == "cat:cs.AI OR cat:cs.LG"
+    assert build_category_query(["hep-th", "astro-ph.CO"]) == "cat:hep-th OR cat:astro-ph.CO"
     with pytest.raises(ValueError):
         build_category_query([])
+
+
+@pytest.mark.parametrize("category", ["cs.AI OR all:x", "cs.AI)", "cat:cs.AI", "CS AI"])
+def test_build_category_query_rejects_injection(category):
+    with pytest.raises(ValueError, match="Invalid arXiv category"):
+        build_category_query([category])
 
 
 def test_paginates_until_max_results_and_throttles(atom_feed):
