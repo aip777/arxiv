@@ -1,7 +1,10 @@
 import uuid
+
 from django.db import models
 from django.utils import timezone
+
 from basebox.enums.enums import ScheduledTaskLogEnum
+
 
 class OptimizedQuerySet(models.QuerySet):
     def optimized(self):
@@ -13,7 +16,7 @@ class OptimizedQuerySet(models.QuerySet):
                 # Avoid reverse relations by default
                 continue
 
-            if isinstance(field, (models.ForeignKey, models.OneToOneField)):
+            if isinstance(field, models.ForeignKey | models.OneToOneField):
                 select_fields.append(field.name)
             elif isinstance(field, models.ManyToManyField):
                 prefetch_fields.append(field.name)

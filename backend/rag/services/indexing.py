@@ -51,7 +51,7 @@ def sync_index(batch_size: int | None = None) -> int:
                     model=settings.EMBEDDING_MODEL,
                     content_hash=paper.content_hash,
                 )
-                for paper, vector in zip(papers, vectors)
+                for paper, vector in zip(papers, vectors, strict=True)
             ],
             update_conflicts=True,
             unique_fields=["paper"],

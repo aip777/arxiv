@@ -1,5 +1,6 @@
 import logging
-from basebox.utils.error_logger import sanitize_text, create_error_log
+
+from basebox.utils.error_logger import create_error_log, sanitize_text
 
 
 class LogHandler(logging.Handler):

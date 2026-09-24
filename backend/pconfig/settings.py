@@ -105,5 +105,5 @@ RAG_TOP_K = config("RAG_TOP_K", default=5, cast=int)
 # Cosine distance (0 = identical, 2 = opposite). Hits further away than this are ignored.
 RAG_MAX_DISTANCE = config("RAG_MAX_DISTANCE", default=0.65, cast=float)
 
-from pconfig.rest_config import *  # noqa: E402,F401,F403
 from pconfig.logs_config import *  # noqa: E402,F401,F403
+from pconfig.rest_config import *  # noqa: E402,F401,F403

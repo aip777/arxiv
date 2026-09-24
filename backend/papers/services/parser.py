@@ -7,7 +7,7 @@ import hashlib
 import logging
 import re
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from xml.etree.ElementTree import ParseError
 
 from defusedxml import ElementTree
@@ -61,7 +61,7 @@ class FeedPage:
 
 
 def compute_content_hash(title: str, abstract: str) -> str:
-    return hashlib.sha256(f"{title}\n\n{abstract}".encode("utf-8")).hexdigest()
+    return hashlib.sha256(f"{title}\n\n{abstract}".encode()).hexdigest()
 
 
 def clean_text(value: str | None) -> str:
@@ -84,8 +84,8 @@ def parse_datetime(value: str | None) -> datetime | None:
     except ValueError:
         return None
     if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
-    return parsed.astimezone(timezone.utc)
+        parsed = parsed.replace(tzinfo=UTC)
+    return parsed.astimezone(UTC)
 
 
 def unique(values):

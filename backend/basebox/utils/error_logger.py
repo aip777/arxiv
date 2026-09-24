@@ -2,7 +2,6 @@ import re
 import sys
 import traceback as tb_module
 
-
 SENSITIVE_PATTERN = re.compile(
     r'(password|passwd|token|secret|api[_-]?key|authorization|credit.card|ssn)'
     r'["\']?\s*[:=]\s*["\']?[^\s,;"\'}\]]+',

@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Tuple
+
 
 class ScheduledTaskLogEnum(Enum):
     """Types of ScheduledTaskLogEnum"""
@@ -8,7 +8,7 @@ class ScheduledTaskLogEnum(Enum):
     FAILED = "failed"
 
     @classmethod
-    def choices(cls) -> List[Tuple[str, str]]:
+    def choices(cls) -> list[tuple[str, str]]:
         """Return Django choices format"""
         return [
             (cls.RUNNING.value, "Running"),
@@ -17,6 +17,6 @@ class ScheduledTaskLogEnum(Enum):
         ]
 
     @classmethod
-    def values(cls) -> List[str]:
+    def values(cls) -> list[str]:
         """Return list of enum values"""
         return [enum_type.value for enum_type in cls]
