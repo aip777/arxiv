@@ -113,7 +113,14 @@ def test_invalid_requests_return_400(client, indexed_papers, payload):
 def test_empty_index_returns_503(client, fake_llm):
     response = ask(client, question="anything about transformers?")
     assert response.status_code == 503
-    assert "ingestion" in response.json()["detail"]
+    assert "ingest_arxiv" in response.json()["detail"]
+
+
+def test_index_built_with_another_model_returns_503(client, indexed_papers, settings):
+    settings.EMBEDDING_MODEL = "some-new-embedding-model"
+    response = ask(client, question="graph neural networks molecular property prediction")
+    assert response.status_code == 503
+    assert "build_index" in response.json()["detail"]
 
 
 def test_llm_failure_returns_503(client, indexed_papers, monkeypatch):

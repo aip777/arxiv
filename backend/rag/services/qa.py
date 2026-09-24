@@ -114,8 +114,11 @@ def serialize_source(hit: RetrievedPaper) -> dict:
 
 def answer_question(question: str, top_k: int | None = None) -> dict:
     top_k = top_k or settings.RAG_TOP_K
-    if not PaperEmbedding.objects.exists():
-        raise IndexEmpty("The search index is empty. Run the ingestion command first.")
+    if not PaperEmbedding.objects.filter(model=settings.EMBEDDING_MODEL).exists():
+        raise IndexEmpty(
+            f"The search index has no {settings.EMBEDDING_MODEL} embeddings. "
+            "Run `ingest_arxiv` (or `build_index` after changing EMBEDDING_MODEL) first."
+        )
 
     hits = retrieve(question, top_k)
     if not hits:

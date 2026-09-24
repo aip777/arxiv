@@ -1,5 +1,3 @@
-import logging
-
 from drf_spectacular.utils import OpenApiExample, extend_schema
 from rest_framework import status
 from rest_framework.response import Response
@@ -8,8 +6,6 @@ from rest_framework.views import APIView
 from rag.serializers import AskRequestSerializer, AskResponseSerializer
 from rag.services.llm import LLMUnavailable
 from rag.services.qa import IndexEmpty, answer_question
-
-logger = logging.getLogger(__name__)
 
 
 class AskView(APIView):
@@ -32,8 +28,8 @@ class AskView(APIView):
             result = answer_question(question, top_k=top_k)
         except IndexEmpty as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-        except LLMUnavailable as exc:
-            logger.error("Could not answer question: %s", exc)
+        except LLMUnavailable:
+            # Already logged where it happened (rag.services.llm).
             return Response(
                 {"detail": "The language model is currently unavailable. Please try again later."},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,

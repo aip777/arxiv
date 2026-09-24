@@ -69,6 +69,14 @@ DATABASES = {
     }
 }
 
+# File-based so the /ask rate limit is shared by all gunicorn workers.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.filebased.FileBasedCache",
+        "LOCATION": SQLITE_PATH.parent / "cache",
+    }
+}
+
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
@@ -100,7 +108,9 @@ ARXIV_TIMEOUT = config("ARXIV_TIMEOUT", default=60, cast=int)
 
 # --- RAG ---------------------------------------------------------------------
 OPENAI_API_KEY = config("OPENAI_API_KEY", default="")
-OPENAI_BASE_URL = config("OPENAI_BASE_URL", default="") or None
+# Always passed explicitly: an empty OPENAI_BASE_URL in the environment would otherwise
+# be picked up by the SDK itself and break every request.
+OPENAI_BASE_URL = config("OPENAI_BASE_URL", default="") or "https://api.openai.com/v1"
 # Changing the model makes every stored vector stale; the next index sync re-embeds them.
 EMBEDDING_MODEL = config("EMBEDDING_MODEL", default="text-embedding-3-small")
 EMBEDDING_BATCH_SIZE = config("EMBEDDING_BATCH_SIZE", default=100, cast=int)
