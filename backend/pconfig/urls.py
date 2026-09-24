@@ -12,3 +12,7 @@ urlpatterns = [
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="docs"),
 ]
+
+# Keep error responses JSON, like the rest of the API.
+handler404 = "basebox.views.errors.not_found"
+handler500 = "basebox.views.errors.server_error"
