@@ -1,0 +1,27 @@
+# Secrets / local config
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Django
+backend/staticfiles/
+backend/media/
+*.sqlite3
+*.sqlite3.db
+
+# Local-only files
+backend/BE-Assessment-Sept2026.pdf
+.idea/
+.vscode/
+.DS_Store
+.mcp.json
