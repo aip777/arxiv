@@ -76,6 +76,12 @@ def test_papers_over_time_by_month(client, dataset):
     assert by_category == {"cs.LG": [2, 1], "cs.AI": [1, 1], "cs.CL": [0, 1]}
 
 
+def test_papers_over_time_by_week_starts_on_monday(client, dataset):
+    series = get_stats(client, interval="week")["papers_over_time"]
+    assert series["periods"] == ["2024-01-01", "2024-01-15", "2024-01-29", "2024-02-12"]
+    assert series["total"] == [1, 1, 1, 1]
+
+
 def test_papers_over_time_by_year(client, dataset):
     series = get_stats(client, interval="year")["papers_over_time"]
     assert series["periods"] == ["2024"]

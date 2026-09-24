@@ -58,6 +58,9 @@ All variables are listed in [`.env.example`](.env.example). Only `OPENAI_API_KEY
 | `THROTTLE_ANON` / `THROTTLE_ASK` | `300/minute` / `20/minute` | API rate limits (`/ask` is stricter because it calls a paid LLM) |
 | `LOG_LEVEL` | `INFO` | Log level for the app loggers |
 
+Less common settings, with sensible defaults: `ARXIV_API_URL`, `ARXIV_MAX_RETRIES` (5), `ARXIV_TIMEOUT`
+(60 s), `EMBEDDING_BATCH_SIZE` (100) and `LLM_TIMEOUT` (60 s).
+
 ## Ingestion and data management
 
 All commands run with `docker compose exec api python manage.py <command>` (or `python manage.py <command>` locally).
@@ -78,6 +81,9 @@ python manage.py build_index
 
 # Wipe papers, authors, categories and embeddings for a clean re-import
 python manage.py reset_dataset --yes
+
+# Housekeeping: drop ErrorLog rows older than 30 days
+python manage.py cleanup_error_logs --days 30
 ```
 
 How the requirements are met:
@@ -91,8 +97,9 @@ How the requirements are met:
   continues. A malformed entry is logged and skipped, and one failing paper doesn't stop the batch.
 - **Updates.** A stored paper is updated when any field, author order or category changed, for example
   a new version, DOI or journal reference. Each paper keeps a SHA-256 `content_hash` of title and
-  abstract. Its embedding stores the hash it was built from. After ingestion, `build_index` logic
-  re-embeds only papers with a missing or stale vector, or all of them if `EMBEDDING_MODEL` changed.
+  abstract. Its embedding stores the hash it was built from. After ingestion, the index sync (the same
+  code `build_index` runs) re-embeds only papers with a missing or stale vector, or all of them if
+  `EMBEDDING_MODEL` changed.
 - **Run log.** Every run is recorded in `ScheduledTaskLog` with status and counts
   (`created / updated / unchanged / skipped / failed`), visible in the admin.
 
@@ -121,7 +128,48 @@ Returns five aggregations, all computed in the database with SQL aggregation:
 curl 'http://localhost:8000/api/stats/?top_n=5&interval=month'
 ```
 
-SAMPLE_STATS_RESPONSE
+Example response from a local run, abbreviated (`…` marks removed items):
+
+```json
+{
+  "filters": {"top_n": 5, "interval": "month", "date_from": null, "date_to": null},
+  "summary": {
+    "total_papers": 589, "total_authors": 2837, "total_categories": 83,
+    "first_published": "2026-09-24", "last_published": "2026-09-24"
+  },
+  "top_categories": [
+    {"category": "cs.LG", "paper_count": 311},
+    {"category": "cs.AI", "paper_count": 295},
+    {"category": "cs.CL", "paper_count": 165},
+    {"category": "cs.CV", "paper_count": 59},
+    {"category": "stat.ML", "paper_count": 40}
+  ],
+  "papers_over_time": {
+    "interval": "month",
+    "periods": ["2026-09"],
+    "total": [589],
+    "series": [
+      {"category": "cs.LG", "counts": [311]},
+      {"category": "cs.AI", "counts": [295]},
+      …
+    ]
+  },
+  "top_authors": [
+    {"author": "Bo Wang", "paper_count": 4},
+    {"author": "Chao Ning", "paper_count": 4},
+    …
+  ],
+  "authors_per_paper": {
+    "average": 5.1, "median": 4.0, "min": 1, "max": 75,
+    "distribution": [
+      {"authors": "1", "paper_count": 64},
+      {"authors": "2", "paper_count": 88},
+      …
+      {"authors": "10+", "paper_count": 54}
+    ]
+  }
+}
+```
 
 Invalid parameters return `400`:
 
@@ -137,22 +185,55 @@ Body: `{"question": "...", "top_k": 5}` (`top_k` optional, 1–20). `question` i
 ```bash
 curl -X POST http://localhost:8000/api/ask/ \
   -H 'Content-Type: application/json' \
-  -d '{"question": "How are large language model agents being evaluated?"}'
+  -d '{"question": "What methods are proposed to reduce hallucinations in large language models?"}'
 ```
 
-SAMPLE_ASK_RESPONSE
+Example response, abbreviated:
+
+```json
+{
+  "answer": "Several methods to reduce hallucinations in large language models are proposed: 1) A geometric framework quantifies uncertainty in model answers ... [2509.13813]. 2) RelCheck provides a post-hoc correction pipeline combining dual relational evidence from scene-graph triples and spatial predicates to correct relational hallucinations in multimodal LLMs [2609.27890]. ...",
+  "sources": [
+    {
+      "arxiv_id": "2609.27890",
+      "title": "RelCheck: Dual-Evidence Spatial Grounding for VLM Hallucination Correction",
+      "authors": ["Siddhi Patil", "Navrati Saxena", "William B. Andreopoulos"],
+      "primary_category": "cs.CV",
+      "published": "2026-09-24",
+      "url": "http://arxiv.org/abs/2609.27890v1",
+      "similarity": 0.5775
+    },
+    …
+  ]
+}
+```
+
+`similarity` is the cosine similarity between the question and the paper. Only papers the model cited are listed.
 
 When nothing in the dataset is relevant, the API says so. It does not call the LLM in that case, and it
 returns no sources:
 
-SAMPLE_NO_MATCH_RESPONSE
+```bash
+curl -X POST http://localhost:8000/api/ask/ -H 'Content-Type: application/json' \
+  -d '{"question": "What is a good recipe for chocolate cake?"}'
+```
+
+```json
+{"answer": "I couldn't find any papers in the dataset that are relevant to this question, so I can't answer it from the available data.", "sources": []}
+```
+
+If papers are related but don't contain the answer, the model says so and `sources` is empty:
+
+```json
+{"answer": "The provided papers do not mention the exact training cost in dollars of GPT-4.", "sources": []}
+```
 
 | Status | When |
 | --- | --- |
 | `200` | Answer produced, or an honest "no relevant papers" answer |
 | `400` | Invalid body (`{"detail": {"question": [...]}}`) |
 | `429` | More than `THROTTLE_ASK` requests per minute from one client |
-| `503` | Index is empty (run ingestion), or the LLM / embedding provider is unavailable |
+| `503` | No embeddings for the current `EMBEDDING_MODEL` (run ingestion or `build_index`), or the LLM / embedding provider is unavailable |
 
 ## Architecture
 
@@ -196,8 +277,8 @@ paper_embedding(paper_id PK → paper ON DELETE CASCADE, embedding BLOB,
 ```
 
 `published` and `updated` are indexed for the time-series queries. All timestamps are stored in UTC.
-Migrations live in each app's `migrations/` folder. The `rag` migration also creates the `vector`
-extension, so `migrate` builds the whole schema from scratch.
+Migrations live in each app's `migrations/` folder, so `migrate` builds the whole schema from scratch.
+The Docker entrypoint runs it on every start.
 
 ## Key decisions
 
@@ -209,7 +290,9 @@ extension, so `migrate` builds the whole schema from scratch.
   that takes milliseconds and is exact rather than approximate.
 - **One embedding per paper (title + abstract).** Abstracts are short, around 150–300 words, so
   chunking would add complexity without better recall.
-- **Grounding.** Retrieval keeps only papers within `RAG_MAX_DISTANCE`. The prompt tells the model to
+- **Grounding.** Retrieval keeps only papers within `RAG_MAX_DISTANCE`. In a local run over about 600
+  recent cs.AI/LG/CL papers, on-topic questions had nearest distances of 0.37–0.54 and off-topic ones
+  (recipes, football) 0.82 or more, so 0.65 sits in the gap. The prompt tells the model to
   use only the given papers, treat their text as data, cite ids, and return `answerable: false` when the
   papers don't cover the question. Only papers the model actually cited are returned as `sources`.
 - **Honest no-match.** If nothing clears the distance cut-off, the API returns a fixed "couldn't find
@@ -246,12 +329,12 @@ ruff check .
 
 ## Testing
 
-CHECK_TEST_COUNT tests (`pytest`) cover:
+78 tests (`pytest`) run against an in-memory SQLite database in about 3 seconds. They cover:
 
 - **Parser:** whitespace cleanup, version stripping, old-style ids, missing DOI or journal ref, author
   de-duplication, primary category handling, malformed entries, API error feeds.
-- **arXiv client:** pagination, the 3-second throttle, backoff on 5xx, 429 and network errors, retry
-  limits, transient empty pages.
+- **arXiv client:** category validation, pagination, the 3-second throttle, backoff on 5xx, 429 and
+  network errors, retry limits, transient empty pages.
 - **Ingestion:** idempotent re-runs, in-place updates, author reordering, per-record failure isolation,
   incremental stop, failed-run logging with partial progress kept, the `ingest_arxiv` and
   `reset_dataset` commands.
@@ -260,7 +343,8 @@ CHECK_TEST_COUNT tests (`pytest`) cover:
   metadata change, model change.
 - **APIs:** every stats aggregation against a hand-counted dataset, parameter validation, `/ask` with
   grounded answers, no-match without an LLM call, "not answerable" handling, citation fallback,
-  `top_k`, validation errors, empty index, provider failure, rate limiting, JSON 404 and health.
+  `top_k`, validation errors, empty or outdated index, provider failure, rate limiting, JSON 404 and health.
+- **OpenAI wrapper:** missing key, and an empty `OPENAI_BASE_URL` from compose not breaking the client.
 
 ## Known limitations
 
@@ -268,6 +352,8 @@ CHECK_TEST_COUNT tests (`pytest`) cover:
   a while. The client backs off and retries, but a long block ends the run with a clear error. Stored
   papers are kept, and re-running resumes.
 - Author identity is name-based, see Assumptions.
+- `--incremental` stops at the first page with nothing new. If an earlier run died part-way, run once
+  without it so the gap gets filled.
 - `/ask` retrieves from abstracts only, so it can't answer questions about full-text details. It also
   isn't meant for questions about the whole dataset, like "how many papers…"; `/api/stats/` covers those.
 - The time series only lists periods that have data. It doesn't zero-fill gaps.
