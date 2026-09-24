@@ -13,6 +13,7 @@ from django.db.models import F
 from papers.models import Paper
 from rag.models import PaperEmbedding
 from rag.services import llm
+from rag.services.vectors import to_blob
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +48,7 @@ def sync_index(batch_size: int | None = None) -> int:
             [
                 PaperEmbedding(
                     paper=paper,
-                    embedding=vector,
+                    embedding=to_blob(vector),
                     model=settings.EMBEDDING_MODEL,
                     content_hash=paper.content_hash,
                 )

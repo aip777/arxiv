@@ -23,6 +23,8 @@ NS = {
 # Matches both new-style (2409.01234v2) and old-style (hep-th/9901001v1) ids.
 ARXIV_ID_RE = re.compile(r"arxiv\.org/abs/(?P<id>.+?)(?:v(?P<version>\d+))?$")
 WHITESPACE_RE = re.compile(r"\s+")
+# Matches the column size for author names and DOIs.
+MAX_NAME_LENGTH = 255
 
 
 class FeedError(Exception):
@@ -71,8 +73,8 @@ def clean_text(value: str | None) -> str:
     return WHITESPACE_RE.sub(" ", value).strip()
 
 
-def optional_text(value: str | None) -> str | None:
-    cleaned = clean_text(value)
+def optional_text(value: str | None, max_length: int | None = None) -> str | None:
+    cleaned = clean_text(value)[:max_length]
     return cleaned or None
 
 
@@ -158,7 +160,7 @@ def parse_entry(entry) -> PaperRecord:
     updated = parse_datetime(entry.findtext("atom:updated", namespaces=NS)) or published
 
     authors = unique(
-        clean_text(author.findtext("atom:name", namespaces=NS))
+        clean_text(author.findtext("atom:name", namespaces=NS))[:MAX_NAME_LENGTH]
         for author in entry.findall("atom:author", NS)
     )
     if not authors:
@@ -195,7 +197,7 @@ def parse_entry(entry) -> PaperRecord:
         categories=categories,
         published=published,
         updated=updated,
-        doi=optional_text(entry.findtext("arxiv:doi", namespaces=NS)),
+        doi=optional_text(entry.findtext("arxiv:doi", namespaces=NS), max_length=MAX_NAME_LENGTH),
         journal_ref=optional_text(entry.findtext("arxiv:journal_ref", namespaces=NS)),
         comment=optional_text(entry.findtext("arxiv:comment", namespaces=NS)),
         abs_url=abs_url or f"https://arxiv.org/abs/{arxiv_id}v{version}",

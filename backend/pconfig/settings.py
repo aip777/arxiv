@@ -52,15 +52,20 @@ TEMPLATES = [
     },
 ]
 
+SQLITE_PATH = Path(config("SQLITE_PATH", default=str(BASE_DIR / "data" / "arxiv.sqlite3")))
+SQLITE_PATH.parent.mkdir(parents=True, exist_ok=True)
+
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": config("POSTGRES_DB", default="arxiv"),
-        "USER": config("POSTGRES_USER", default="arxiv"),
-        "PASSWORD": config("POSTGRES_PASSWORD", default="arxiv"),
-        "HOST": config("POSTGRES_HOST", default="localhost"),
-        "PORT": config("POSTGRES_PORT", default="5432"),
-        "CONN_MAX_AGE": 60,
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": SQLITE_PATH,
+        "OPTIONS": {
+            "timeout": 20,
+            # WAL lets the API keep reading while an ingestion run is writing.
+            "init_command": "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;",
+            # Take the write lock up front to avoid "database is locked" upgrade errors.
+            "transaction_mode": "IMMEDIATE",
+        },
     }
 }
 
@@ -96,7 +101,7 @@ ARXIV_TIMEOUT = config("ARXIV_TIMEOUT", default=60, cast=int)
 # --- RAG ---------------------------------------------------------------------
 OPENAI_API_KEY = config("OPENAI_API_KEY", default="")
 OPENAI_BASE_URL = config("OPENAI_BASE_URL", default="") or None
-# The vector column is 1536-dimensional (rag.models.EMBEDDING_DIMENSIONS); the model must produce that size.
+# Changing the model makes every stored vector stale; the next index sync re-embeds them.
 EMBEDDING_MODEL = config("EMBEDDING_MODEL", default="text-embedding-3-small")
 EMBEDDING_BATCH_SIZE = config("EMBEDDING_BATCH_SIZE", default=100, cast=int)
 LLM_MODEL = config("LLM_MODEL", default="gpt-4.1-mini")

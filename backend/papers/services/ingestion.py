@@ -76,12 +76,7 @@ def _has_changed(paper: Paper, record: PaperRecord) -> bool:
 def upsert_paper(record: PaperRecord) -> str:
     """Insert or update one paper with its authors and categories. Returns the outcome."""
     with transaction.atomic():
-        paper = (
-            Paper.objects.select_related("primary_category")
-            .select_for_update(of=("self",))
-            .filter(arxiv_id=record.arxiv_id)
-            .first()
-        )
+        paper = Paper.objects.select_related("primary_category").filter(arxiv_id=record.arxiv_id).first()
         if paper is not None and not _has_changed(paper, record):
             return UNCHANGED
 

@@ -14,8 +14,9 @@ RUN pip install -r requirements-dev.txt
 RUN groupadd --system app && useradd --system --gid app --home-dir /app app
 
 COPY . .
-RUN DJANGO_SECRET_KEY=collectstatic-only python manage.py collectstatic --noinput \
+RUN DJANGO_SECRET_KEY=collectstatic-only SQLITE_PATH=/tmp/build.sqlite3 python manage.py collectstatic --noinput \
     && chmod +x entrypoint.sh \
+    && mkdir -p /app/data \
     && chown -R app:app /app
 
 USER app

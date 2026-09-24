@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-# The compose healthcheck already waits for Postgres, so migrations can run straight away.
+# Creates the SQLite database on first start and applies any new migrations.
 python manage.py migrate --noinput
 
 exec "$@"

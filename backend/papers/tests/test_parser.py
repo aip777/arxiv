@@ -83,3 +83,10 @@ def test_empty_feed_returns_no_records():
     page = parse_feed(empty)
     assert page.total_results == 0
     assert page.records == []
+
+
+def test_overlong_author_names_are_truncated_to_column_size(atom_feed):
+    long_name = "Collaboration " + "X" * 400
+    feed = atom_feed.replace("<name>Carol White</name>", f"<name>{long_name}</name>")
+    old_paper = parse_feed(feed).records[1]
+    assert len(old_paper.authors[0]) == 255

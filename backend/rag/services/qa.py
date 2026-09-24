@@ -1,7 +1,7 @@
 """
 Retrieval-augmented question answering over the paper abstracts.
 
-1. Embed the question and pull the nearest papers from pgvector (cosine distance).
+1. Embed the question and find the nearest abstracts by cosine distance.
 2. Drop anything further than RAG_MAX_DISTANCE; if nothing is left, say so
    without calling the LLM at all.
 3. Otherwise ask the LLM to answer strictly from those papers and to list the
@@ -12,11 +12,11 @@ from dataclasses import dataclass
 
 from django.conf import settings
 from django.db.models import Prefetch
-from pgvector.django import CosineDistance
 
 from papers.models import Paper, PaperAuthor
 from rag.models import PaperEmbedding
 from rag.services import llm
+from rag.services.vectors import nearest as nearest_papers
 
 logger = logging.getLogger(__name__)
 
@@ -59,13 +59,7 @@ class RetrievedPaper:
 
 def retrieve(question: str, top_k: int) -> list[RetrievedPaper]:
     question_vector = llm.embed_texts([question])[0]
-    nearest = list(
-        PaperEmbedding.objects
-        .filter(model=settings.EMBEDDING_MODEL)
-        .annotate(distance=CosineDistance("embedding", question_vector))
-        .order_by("distance")
-        .values_list("paper_id", "distance")[:top_k]
-    )
+    nearest = nearest_papers(question_vector, settings.EMBEDDING_MODEL, top_k)
     logger.info("Retrieval distances: %s", [round(d, 3) for _, d in nearest])
     relevant = [(paper_id, distance) for paper_id, distance in nearest
                 if distance <= settings.RAG_MAX_DISTANCE]

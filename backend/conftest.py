@@ -7,8 +7,8 @@ from pathlib import Path
 import pytest
 
 from papers.services.parser import PaperRecord
-from rag.models import EMBEDDING_DIMENSIONS
 
+EMBEDDING_DIMENSIONS = 256
 FIXTURES = Path(__file__).parent / "papers" / "tests" / "fixtures"
 STOPWORDS = {"the", "and", "for", "with", "that", "this", "are", "how", "what", "which", "from", "does", "use"}
 
