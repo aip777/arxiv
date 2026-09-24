@@ -1,39 +1,33 @@
 from django.contrib import admin
 
-from basebox.models.base import ScheduledTaskLog
-from basebox.models.error_log import ErrorLog
+from basebox.models import ErrorLog, ScheduledTaskLog
 
 
 @admin.register(ScheduledTaskLog)
 class ScheduledTaskLogAdmin(admin.ModelAdmin):
-    list_display = ['name', 'start_time', 'end_time', 'status', 'date_created']
-    list_filter = ['name', 'start_time', 'end_time', 'status', 'date_created']
-    search_fields = ['name', 'start_time', 'end_time', 'status']
+    list_display = ['name', 'status', 'start_time', 'end_time', 'message']
+    list_filter = ['name', 'status']
+    search_fields = ['name', 'message']
     readonly_fields = ['date_created', 'last_updated']
-    exclude = ['json_meta']
     list_per_page = 25
-    date_hierarchy = 'date_created'
+    date_hierarchy = 'start_time'
 
 
 @admin.register(ErrorLog)
 class ErrorLogAdmin(admin.ModelAdmin):
-    list_display = ['level', 'status_code', 'message', 'traceback', 'path',
-        'method', 'user', 'date_created', 'last_updated']
+    list_display = ['level', 'status_code', 'short_message', 'path', 'method', 'date_created']
     list_filter = ['level', 'status_code', 'method']
     search_fields = ['message', 'traceback', 'path', 'user']
-    ordering = ['-date_created']
     readonly_fields = [
-        'uuid', 'level', 'status_code', 'message', 'traceback', 'path',
+        'level', 'status_code', 'message', 'traceback', 'path',
         'method', 'user', 'date_created', 'last_updated',
     ]
-    exclude = ['json_meta', 'is_active', 'type']
     list_per_page = 50
     date_hierarchy = 'date_created'
 
-
+    @admin.display(description='Message')
     def short_message(self, obj):
         return obj.message[:120] if obj.message else ''
-    short_message.short_description = 'Message'
 
     def has_add_permission(self, request):
         return False

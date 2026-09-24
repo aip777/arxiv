@@ -1,33 +1,14 @@
 import logging
 
-from basebox.utils.error_logger import create_error_log, sanitize_text
+from basebox.utils.error_logger import create_error_log
 
 
 class LogHandler(logging.Handler):
+    """Stores ERROR log records in the ErrorLog table so they show up in the admin."""
+
     def emit(self, record):
         try:
-            trace_exc = None
-            if record.exc_info and record.exc_info[1]:
-                trace_exc = record.exc_info[1]
-
-            message = sanitize_text(self.format(record))
-
-            path = getattr(record, 'request_path', None)
-            method = getattr(record, 'request_method', None)
-            user = getattr(record, 'request_user', None)
-            status_code = getattr(record, 'status_code', None)
-
-            if hasattr(record, 'status_code'):
-                path = path or getattr(record, 'path', None)
-
-            create_error_log(
-                level=record.levelname,
-                message=message,
-                exc=trace_exc,
-                path=path,
-                method=method,
-                user=user,
-                status_code=status_code,
-            )
+            exc = record.exc_info[1] if record.exc_info else None
+            create_error_log(level=record.levelname, message=self.format(record), exc=exc)
         except Exception:
             self.handleError(record)

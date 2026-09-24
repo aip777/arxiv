@@ -1,9 +1,9 @@
 from django.db import models
 
-from basebox.models.base import BaseModel
+from basebox.models.base import TimeStampedModel
 
 
-class ErrorLog(BaseModel):
+class ErrorLog(TimeStampedModel):
     level = models.CharField(max_length=10, db_index=True)
     message = models.TextField()
     traceback = models.TextField(blank=True, null=True)
