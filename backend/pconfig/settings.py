@@ -99,7 +99,7 @@ OPENAI_BASE_URL = config("OPENAI_BASE_URL", default="") or None
 # The vector column is 1536-dimensional (rag.models.EMBEDDING_DIMENSIONS); the model must produce that size.
 EMBEDDING_MODEL = config("EMBEDDING_MODEL", default="text-embedding-3-small")
 EMBEDDING_BATCH_SIZE = config("EMBEDDING_BATCH_SIZE", default=100, cast=int)
-LLM_MODEL = config("LLM_MODEL", default="gpt-4o-mini")
+LLM_MODEL = config("LLM_MODEL", default="gpt-4.1-mini")
 LLM_TIMEOUT = config("LLM_TIMEOUT", default=60, cast=int)
 RAG_TOP_K = config("RAG_TOP_K", default=5, cast=int)
 # Cosine distance (0 = identical, 2 = opposite). Hits further away than this are ignored.
