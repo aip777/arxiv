@@ -41,6 +41,7 @@ Everything is listed in `.env.example`. Only `OPENAI_API_KEY` is required. The r
 | Variable | Default | What it does |
 | --- | --- | --- |
 | `OPENAI_API_KEY` | | Used for embeddings and answers |
+| `OPENAI_BASE_URL` | `https://api.openai.com/v1` | Any OpenAI-compatible endpoint |
 | `EMBEDDING_MODEL` | `text-embedding-3-small` | Embedding model |
 | `LLM_MODEL` | `gpt-4.1-mini` | Model that writes the answers |
 | `RAG_TOP_K` | `5` | How many papers are retrieved per question |
@@ -53,7 +54,9 @@ Everything is listed in `.env.example`. Only `OPENAI_API_KEY` is required. The r
 | `DJANGO_DEBUG` | `false` | Debug mode |
 | `DJANGO_ALLOWED_HOSTS` | `localhost,127.0.0.1` | Allowed hosts |
 | `API_PORT` | `8000` | Port the API is published on |
+| `THROTTLE_ANON` | `300/minute` | Rate limit for every other endpoint |
 | `THROTTLE_ASK` | `20/minute` | Rate limit for `/ask` |
+| `LOG_LEVEL` | `INFO` | Log level for the app's own loggers |
 
 ## Loading and managing data
 
@@ -208,12 +211,12 @@ The code lives in `backend/`:
 
 ### Database schema
 
-- `category`: arXiv category code, e.g. `cs.AI`
-- `author`: author name
-- `paper`: arXiv id, version, title, abstract, primary category, published and updated dates, DOI, journal ref, comment, links
-- `paper_categories`: links papers to all of their categories
-- `paper_author`: links papers to authors, keeping author order
-- `paper_embedding`: one vector per paper (title + abstract), plus which model made it and a hash of the text it was built from
+- `papers_category`: arXiv category code, e.g. `cs.AI`
+- `papers_author`: author name
+- `papers_paper`: arXiv id, version, title, abstract, primary category, published and updated dates, DOI, journal ref, comment, links
+- `papers_paper_categories`: links papers to all of their categories
+- `papers_paperauthor`: links papers to authors, keeping author order
+- `rag_paperembedding`: one vector per paper (title + abstract), plus which model made it and a hash of the text it was built from
 
 Migrations are in each app's `migrations/` folder.
 
@@ -226,14 +229,18 @@ Migrations are in each app's `migrations/` folder.
 ## Running without Docker
 
 ```bash
+cp .env.example .env            # and set OPENAI_API_KEY
 python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -r backend/requirements-dev.txt
 cd backend
 python manage.py migrate
+python manage.py collectstatic --noinput   # needed for the admin when DJANGO_DEBUG=false
 python manage.py ingest_arxiv
 python manage.py runserver
 ```
+
+The database file is created at `backend/data/arxiv.sqlite3`. If you see `no such table`, you skipped `migrate`.
 
 ## Tests
 
