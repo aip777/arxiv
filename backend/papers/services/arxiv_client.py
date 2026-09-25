@@ -120,7 +120,11 @@ class ArxivClient:
 
             total = page.total_results
             if page.entry_count == 0:
-                logger.info("No more results from arXiv at start=%d (total=%d)", start, total)
+                if start < total:
+                    logger.warning("arXiv kept returning empty pages at start=%d although it reports %d results; "
+                                   "stopping early", start, total)
+                else:
+                    logger.info("No more results from arXiv at start=%d (total=%d)", start, total)
                 return
 
             logger.info("Fetched %d entries (start=%d, total available=%d)",

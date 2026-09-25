@@ -76,7 +76,7 @@ def retrieve(question: str, top_k: int) -> list[RetrievedPaper]:
         )
         .in_bulk()
     )
-    return [RetrievedPaper(papers[paper_id], distance) for paper_id, distance in relevant]
+    return [RetrievedPaper(papers[paper_id], distance) for paper_id, distance in relevant if paper_id in papers]
 
 
 def author_names(paper: Paper) -> list[str]:

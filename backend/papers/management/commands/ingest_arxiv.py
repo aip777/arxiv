@@ -49,6 +49,12 @@ class Command(BaseCommand):
         except ArxivClientError as exc:
             raise CommandError(f"Ingestion stopped: {exc}. Papers stored so far are kept; re-run to resume.") from exc
         self.stdout.write(self.style.SUCCESS(f"Ingestion finished: {stats}"))
+        received = stats.fetched + stats.skipped
+        if received < max_results and not options["incremental"]:
+            self.stderr.write(self.style.WARNING(
+                f"arXiv returned only {received} of the {max_results} papers requested. "
+                "It may have run out of results or cut the run short; re-run later to fill the gap."
+            ))
 
         if options["skip_embeddings"]:
             self.stdout.write("Skipping embeddings (--skip-embeddings).")

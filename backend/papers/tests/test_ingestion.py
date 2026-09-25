@@ -181,6 +181,15 @@ def test_ingest_command_without_api_key_still_stores_papers(make_record, setting
     assert PaperEmbedding.objects.count() == 0
 
 
+def test_ingest_command_warns_when_arxiv_returns_fewer_papers(make_record, monkeypatch, capsys):
+    client = FakeArxivClient([[make_record("2409.00001")]])
+    monkeypatch.setattr("papers.services.ingestion.ArxivClient", lambda: client)
+
+    call_command("ingest_arxiv", "--max-results", "5", "--skip-embeddings")
+
+    assert "returned only 1 of the 5 papers" in capsys.readouterr().err
+
+
 def test_ingest_command_reports_arxiv_failure(monkeypatch):
     client = FakeArxivClient([], error=ArxivClientError("HTTP 503"))
     monkeypatch.setattr("papers.services.ingestion.ArxivClient", lambda: client)

@@ -1,6 +1,7 @@
 import pytest
 import requests
 
+from papers.services import arxiv_client
 from papers.services.arxiv_client import ArxivClient, ArxivClientError, build_category_query
 
 EMPTY_FEED = """<?xml version="1.0"?>
@@ -127,3 +128,12 @@ def test_retries_transient_empty_page_then_continues(atom_feed):
 def test_empty_result_set_yields_nothing():
     client, _, _ = make_client([FakeResponse(text=EMPTY_FEED.format(total=0))])
     assert list(client.iter_pages(["cs.AI"], max_results=10, page_size=5)) == []
+
+
+def test_persistent_empty_pages_stop_the_run_with_a_warning(caplog, monkeypatch):
+    # The app loggers don't propagate to the root logger, so hook caplog in directly.
+    monkeypatch.setattr(arxiv_client.logger, "handlers", [caplog.handler])
+    client, session, _ = make_client([FakeResponse(text=EMPTY_FEED.format(total=500))] * 4)
+    assert list(client.iter_pages(["cs.AI"], max_results=10, page_size=5)) == []
+    assert len(session.calls) == 4
+    assert "stopping early" in caplog.text
