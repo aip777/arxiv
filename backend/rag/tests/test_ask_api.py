@@ -18,17 +18,29 @@ def client():
 
 @pytest.fixture
 def indexed_papers(make_record, fake_llm):
-    ingest_records([
-        make_record("2409.00001", title="Graph neural networks for molecules",
-                    abstract="We apply graph neural networks to molecular property prediction.",
-                    authors=["Alice Smith"]),
-        make_record("2409.00002", title="Reinforcement learning for robotics",
-                    abstract="Robots learn manipulation skills with reinforcement learning.",
-                    authors=["Bob Jones"]),
-        make_record("2409.00003", title="Speech recognition with transformers",
-                    abstract="Transformers improve automatic speech recognition accuracy.",
-                    authors=["Carol White"]),
-    ], IngestionStats())
+    ingest_records(
+        [
+            make_record(
+                "2409.00001",
+                title="Graph neural networks for molecules",
+                abstract="We apply graph neural networks to molecular property prediction.",
+                authors=["Alice Smith"],
+            ),
+            make_record(
+                "2409.00002",
+                title="Reinforcement learning for robotics",
+                abstract="Robots learn manipulation skills with reinforcement learning.",
+                authors=["Bob Jones"],
+            ),
+            make_record(
+                "2409.00003",
+                title="Speech recognition with transformers",
+                abstract="Transformers improve automatic speech recognition accuracy.",
+                authors=["Carol White"],
+            ),
+        ],
+        IngestionStats(),
+    )
     sync_index()
     return fake_llm
 
@@ -81,8 +93,11 @@ def test_llm_saying_context_is_insufficient_returns_no_sources(client, indexed_p
 
 
 def test_uncited_answer_falls_back_to_retrieved_papers(client, indexed_papers):
-    indexed_papers.next_response = {"answer": "Graph networks work well.", "cited_ids": ["9999.99999"],
-                                    "answerable": True}
+    indexed_papers.next_response = {
+        "answer": "Graph networks work well.",
+        "cited_ids": ["9999.99999"],
+        "answerable": True,
+    }
 
     response = ask(client, question="graph neural networks molecular property prediction")
 
@@ -96,14 +111,17 @@ def test_top_k_limits_retrieval(client, indexed_papers):
     assert user_prompt.count("\n---\n") == 0
 
 
-@pytest.mark.parametrize("payload", [
-    {},
-    {"question": ""},
-    {"question": "hi"},
-    {"question": "x" * 1001},
-    {"question": "valid question", "top_k": 0},
-    {"question": "valid question", "top_k": 50},
-])
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {},
+        {"question": ""},
+        {"question": "hi"},
+        {"question": "x" * 1001},
+        {"question": "valid question", "top_k": 0},
+        {"question": "valid question", "top_k": 50},
+    ],
+)
 def test_invalid_requests_return_400(client, indexed_papers, payload):
     response = client.post(reverse("ask"), payload, format="json")
     assert response.status_code == 400

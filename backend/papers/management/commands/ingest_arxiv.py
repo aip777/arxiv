@@ -14,16 +14,24 @@ class Command(BaseCommand):
     )
 
     def add_arguments(self, parser):
-        parser.add_argument("--categories", nargs="+", default=None,
-                            help="arXiv categories to pull (default: ARXIV_CATEGORIES, e.g. cs.AI cs.LG cs.CL).")
-        parser.add_argument("--max-results", type=int, default=1000,
-                            help="Maximum number of papers to request (default: 1000).")
-        parser.add_argument("--page-size", type=int, default=None,
-                            help="Papers per API request (default: ARXIV_PAGE_SIZE, max 2000).")
-        parser.add_argument("--incremental", action="store_true",
-                            help="Stop at the first page with no new or changed papers.")
-        parser.add_argument("--skip-embeddings", action="store_true",
-                            help="Only store papers; run `build_index` later to embed them.")
+        parser.add_argument(
+            "--categories",
+            nargs="+",
+            default=None,
+            help="arXiv categories to pull (default: ARXIV_CATEGORIES, e.g. cs.AI cs.LG cs.CL).",
+        )
+        parser.add_argument(
+            "--max-results", type=int, default=1000, help="Maximum number of papers to request (default: 1000)."
+        )
+        parser.add_argument(
+            "--page-size", type=int, default=None, help="Papers per API request (default: ARXIV_PAGE_SIZE, max 2000)."
+        )
+        parser.add_argument(
+            "--incremental", action="store_true", help="Stop at the first page with no new or changed papers."
+        )
+        parser.add_argument(
+            "--skip-embeddings", action="store_true", help="Only store papers; run `build_index` later to embed them."
+        )
 
     def handle(self, *args, **options):
         categories = options["categories"] or settings.ARXIV_CATEGORIES
@@ -51,10 +59,12 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f"Ingestion finished: {stats}"))
         received = stats.fetched + stats.skipped
         if received < max_results and not options["incremental"]:
-            self.stderr.write(self.style.WARNING(
-                f"arXiv returned only {received} of the {max_results} papers requested. "
-                "It may have run out of results or cut the run short; re-run later to fill the gap."
-            ))
+            self.stderr.write(
+                self.style.WARNING(
+                    f"arXiv returned only {received} of the {max_results} papers requested. "
+                    "It may have run out of results or cut the run short; re-run later to fill the gap."
+                )
+            )
 
         if options["skip_embeddings"]:
             self.stdout.write("Skipping embeddings (--skip-embeddings).")
@@ -62,9 +72,11 @@ class Command(BaseCommand):
         try:
             embedded = sync_index()
         except LLMUnavailable as exc:
-            self.stderr.write(self.style.WARNING(
-                f"Papers were stored but the vector index was not updated: {exc} "
-                "Run `python manage.py build_index` once the embedding provider is available."
-            ))
+            self.stderr.write(
+                self.style.WARNING(
+                    f"Papers were stored but the vector index was not updated: {exc} "
+                    "Run `python manage.py build_index` once the embedding provider is available."
+                )
+            )
             return
         self.stdout.write(self.style.SUCCESS(f"Vector index refreshed: {embedded} papers embedded."))

@@ -11,8 +11,8 @@ class PaperEmbedding(TimeStampedModel):
     `content_hash` and `model` record what the vector was built from, so the
     index can tell when a paper changed (or the model did) and re-embed only those.
     """
-    paper = models.OneToOneField(Paper, on_delete=models.CASCADE, primary_key=True,
-                                 related_name="embedding")
+
+    paper = models.OneToOneField(Paper, on_delete=models.CASCADE, primary_key=True, related_name="embedding")
     embedding = models.BinaryField()
     model = models.CharField(max_length=100, db_index=True)
     content_hash = models.CharField(max_length=64)

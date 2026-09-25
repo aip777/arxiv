@@ -5,6 +5,7 @@ Vectors are stored L2-normalised as float32 bytes, so cosine similarity is a
 plain dot product. Search is an exact scan with numpy: for a few thousand
 abstracts that takes milliseconds and needs no extra service or index file.
 """
+
 import numpy as np
 
 from rag.models import PaperEmbedding

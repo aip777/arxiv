@@ -19,8 +19,7 @@ def store(paper, vector, model="m"):
 
 
 def test_nearest_orders_by_cosine_distance(make_record):
-    ingest_records([make_record("2409.00001"), make_record("2409.00002"), make_record("2409.00003")],
-                   IngestionStats())
+    ingest_records([make_record("2409.00001"), make_record("2409.00002"), make_record("2409.00003")], IngestionStats())
     first, second, third = Paper.objects.order_by("arxiv_id")
     store(first, [1, 0, 0])
     store(second, [1, 1, 0])

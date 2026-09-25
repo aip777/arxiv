@@ -48,8 +48,16 @@ class FakeClock:
 def make_client(responses, **kwargs):
     clock = FakeClock()
     session = FakeSession(responses)
-    client = ArxivClient(base_url="http://arxiv.test/api/query", delay=3, max_retries=2, timeout=5,
-                         session=session, sleep=clock.sleep, clock=clock.time, **kwargs)
+    client = ArxivClient(
+        base_url="http://arxiv.test/api/query",
+        delay=3,
+        max_retries=2,
+        timeout=5,
+        session=session,
+        sleep=clock.sleep,
+        clock=clock.time,
+        **kwargs,
+    )
     return client, session, clock
 
 
@@ -90,11 +98,13 @@ def test_stops_when_total_results_reached(atom_feed):
 
 
 def test_retries_throttled_and_failed_requests(atom_feed):
-    client, session, clock = make_client([
-        FakeResponse(status_code=503),
-        requests.ConnectionError("boom"),
-        FakeResponse(text=atom_feed),
-    ])
+    client, session, clock = make_client(
+        [
+            FakeResponse(status_code=503),
+            requests.ConnectionError("boom"),
+            FakeResponse(text=atom_feed),
+        ]
+    )
     page = client.fetch_page("cat:cs.AI", start=0, max_results=3)
     assert len(page.records) == 2
     assert len(session.calls) == 3
@@ -116,10 +126,12 @@ def test_non_retryable_status_fails_immediately():
 
 
 def test_retries_transient_empty_page_then_continues(atom_feed):
-    client, session, _ = make_client([
-        FakeResponse(text=EMPTY_FEED.format(total=3)),
-        FakeResponse(text=atom_feed),
-    ])
+    client, session, _ = make_client(
+        [
+            FakeResponse(text=EMPTY_FEED.format(total=3)),
+            FakeResponse(text=atom_feed),
+        ]
+    )
     pages = list(client.iter_pages(["cs.AI"], max_results=3, page_size=3))
     assert len(pages) == 1
     assert len(session.calls) == 2

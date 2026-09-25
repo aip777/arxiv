@@ -7,6 +7,7 @@ Retrieval-augmented question answering over the paper abstracts.
 3. Otherwise ask the LLM to answer strictly from those papers and to list the
    ones it used. Only cited papers are returned as sources.
 """
+
 import logging
 from dataclasses import dataclass
 
@@ -61,14 +62,12 @@ def retrieve(question: str, top_k: int) -> list[RetrievedPaper]:
     question_vector = llm.embed_texts([question])[0]
     nearest = nearest_papers(question_vector, settings.EMBEDDING_MODEL, top_k)
     logger.info("Retrieval distances: %s", [round(d, 3) for _, d in nearest])
-    relevant = [(paper_id, distance) for paper_id, distance in nearest
-                if distance <= settings.RAG_MAX_DISTANCE]
+    relevant = [(paper_id, distance) for paper_id, distance in nearest if distance <= settings.RAG_MAX_DISTANCE]
     if not relevant:
         return []
 
     papers = (
-        Paper.objects
-        .filter(pk__in=[paper_id for paper_id, _ in relevant])
+        Paper.objects.filter(pk__in=[paper_id for paper_id, _ in relevant])
         .select_related("primary_category")
         .prefetch_related(
             "categories",

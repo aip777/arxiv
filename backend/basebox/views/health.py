@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 class HealthView(APIView):
     """Liveness/readiness probe used by docker-compose."""
+
     throttle_classes = []
 
     @extend_schema(exclude=True)
@@ -20,6 +21,5 @@ class HealthView(APIView):
                 cursor.execute("SELECT 1")
         except Exception:
             logger.exception("Health check failed: database unreachable")
-            return Response({"status": "error", "database": "unreachable"},
-                            status=status.HTTP_503_SERVICE_UNAVAILABLE)
+            return Response({"status": "error", "database": "unreachable"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         return Response({"status": "ok", "database": "ok"})

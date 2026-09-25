@@ -8,10 +8,10 @@ class ErrorLoggingMiddleware:
     def __call__(self, request):
         response = self.get_response(request)
 
-        if response.status_code >= 400 and not getattr(request, '_error_logged', False):
+        if response.status_code >= 400 and not getattr(request, "_error_logged", False):
             path, method, user = extract_request_info(request)
-            level = 'ERROR' if response.status_code >= 500 else 'WARNING'
-            message = getattr(response, 'reason_phrase', f'HTTP {response.status_code}')
+            level = "ERROR" if response.status_code >= 500 else "WARNING"
+            message = getattr(response, "reason_phrase", f"HTTP {response.status_code}")
 
             create_error_log(
                 level=level,
@@ -25,14 +25,14 @@ class ErrorLoggingMiddleware:
         return response
 
     def process_exception(self, request, exception):
-        if getattr(request, '_error_logged', False):
+        if getattr(request, "_error_logged", False):
             return None
 
         request._error_logged = True
         path, method, user = extract_request_info(request)
 
         create_error_log(
-            level='ERROR',
+            level="ERROR",
             message=str(exception),
             exc=exception,
             path=path,

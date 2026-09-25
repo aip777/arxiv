@@ -16,7 +16,7 @@ def _mark_logged(request):
     if not request:
         return
     request._error_logged = True
-    django_request = getattr(request, '_request', None)
+    django_request = getattr(request, "_request", None)
     if django_request is not None:
         django_request._error_logged = True
 
@@ -28,7 +28,7 @@ def custom_exception_handler(exc, context):
     Validation errors keep DRF's per-field structure under `detail` so clients can
     point at the offending parameter.
     """
-    request = context.get('request')
+    request = context.get("request")
     path, method, user = extract_request_info(request)
     _mark_logged(request)
 
@@ -36,12 +36,14 @@ def custom_exception_handler(exc, context):
     if response is not None:
         if isinstance(exc, ValidationError):
             response.data = {"detail": response.data}
-        level = 'ERROR' if response.status_code >= 500 else 'WARNING'
+        level = "ERROR" if response.status_code >= 500 else "WARNING"
         create_error_log(
             level=level,
             message=str(response.data.get("detail", exc)),
             exc=exc if response.status_code >= 500 else None,
-            path=path, method=method, user=user,
+            path=path,
+            method=method,
+            user=user,
             status_code=response.status_code,
         )
         return response

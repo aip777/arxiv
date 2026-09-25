@@ -5,6 +5,7 @@ A paper needs (re-)embedding when it has no vector yet, when its title/abstract
 changed since the vector was built (content_hash differs), or when the
 configured embedding model changed.
 """
+
 import logging
 
 from django.conf import settings
@@ -41,7 +42,7 @@ def sync_index(batch_size: int | None = None) -> int:
     logger.info("Embedding %d papers with %s", len(pending_ids), settings.EMBEDDING_MODEL)
     embedded = 0
     for start in range(0, len(pending_ids), batch_size):
-        chunk = pending_ids[start:start + batch_size]
+        chunk = pending_ids[start : start + batch_size]
         papers = list(Paper.objects.filter(pk__in=chunk).only("pk", "title", "abstract", "content_hash"))
         vectors = llm.embed_texts([paper.embedding_text for paper in papers])
         PaperEmbedding.objects.bulk_create(

@@ -8,8 +8,9 @@ class Command(BaseCommand):
     help = "Embed papers that have no vector yet or whose title/abstract changed."
 
     def add_arguments(self, parser):
-        parser.add_argument("--batch-size", type=int, default=None,
-                            help="Texts per embedding request (default: EMBEDDING_BATCH_SIZE).")
+        parser.add_argument(
+            "--batch-size", type=int, default=None, help="Texts per embedding request (default: EMBEDDING_BATCH_SIZE)."
+        )
 
     def handle(self, *args, **options):
         pending = stale_papers().count()

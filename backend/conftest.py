@@ -62,6 +62,7 @@ def fake_llm(monkeypatch, settings):
 @pytest.fixture(autouse=True)
 def _clear_throttle_cache():
     from django.core.cache import cache
+
     cache.clear()
 
 
@@ -90,4 +91,5 @@ def make_record():
         }
         values.update(overrides)
         return PaperRecord(**values)
+
     return _make

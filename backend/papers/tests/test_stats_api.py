@@ -22,14 +22,30 @@ def client():
 def dataset(make_record):
     """Four papers across two months with a known author/category spread."""
     records = [
-        make_record("2401.00001", published=at(2024, 1, 5), authors=["Alice", "Bob"],
-                    primary_category="cs.LG", categories=["cs.LG", "cs.AI"]),
-        make_record("2401.00002", published=at(2024, 1, 20), authors=["Alice"],
-                    primary_category="cs.LG", categories=["cs.LG"]),
-        make_record("2402.00001", published=at(2024, 2, 3), authors=["Alice", "Carol", "Dan"],
-                    primary_category="cs.CL", categories=["cs.CL", "cs.LG"]),
-        make_record("2402.00002", published=at(2024, 2, 14), authors=["Bob", "Carol", "Dan", "Eve"],
-                    primary_category="cs.AI", categories=["cs.AI"]),
+        make_record(
+            "2401.00001",
+            published=at(2024, 1, 5),
+            authors=["Alice", "Bob"],
+            primary_category="cs.LG",
+            categories=["cs.LG", "cs.AI"],
+        ),
+        make_record(
+            "2401.00002", published=at(2024, 1, 20), authors=["Alice"], primary_category="cs.LG", categories=["cs.LG"]
+        ),
+        make_record(
+            "2402.00001",
+            published=at(2024, 2, 3),
+            authors=["Alice", "Carol", "Dan"],
+            primary_category="cs.CL",
+            categories=["cs.CL", "cs.LG"],
+        ),
+        make_record(
+            "2402.00002",
+            published=at(2024, 2, 14),
+            authors=["Bob", "Carol", "Dan", "Eve"],
+            primary_category="cs.AI",
+            categories=["cs.AI"],
+        ),
     ]
     ingest_records(records, IngestionStats())
 
@@ -118,13 +134,16 @@ def test_date_filters(client, dataset):
     assert data["papers_over_time"]["periods"] == ["2024-02"]
 
 
-@pytest.mark.parametrize("params", [
-    {"top_n": 0},
-    {"top_n": 500},
-    {"interval": "decade"},
-    {"date_from": "not-a-date"},
-    {"date_from": "2024-03-01", "date_to": "2024-01-01"},
-])
+@pytest.mark.parametrize(
+    "params",
+    [
+        {"top_n": 0},
+        {"top_n": 500},
+        {"interval": "decade"},
+        {"date_from": "not-a-date"},
+        {"date_from": "2024-03-01", "date_to": "2024-01-01"},
+    ],
+)
 def test_invalid_parameters_return_400(client, params):
     response = client.get(reverse("stats"), params)
     assert response.status_code == 400

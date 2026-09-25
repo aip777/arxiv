@@ -14,8 +14,7 @@ class AskView(APIView):
     @extend_schema(
         request=AskRequestSerializer,
         responses={200: AskResponseSerializer},
-        examples=[OpenApiExample("Question", value={"question": "How are LLM agents evaluated?"},
-                                 request_only=True)],
+        examples=[OpenApiExample("Question", value={"question": "How are LLM agents evaluated?"}, request_only=True)],
         summary="Answer a question from the paper abstracts (RAG)",
     )
     def post(self, request):

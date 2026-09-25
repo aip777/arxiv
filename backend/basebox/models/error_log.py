@@ -13,10 +13,10 @@ class ErrorLog(TimeStampedModel):
     status_code = models.PositiveSmallIntegerField(blank=True, null=True, db_index=True)
 
     class Meta:
-        ordering = ['-date_created']
+        ordering = ["-date_created"]
         indexes = [
-            models.Index(fields=['-date_created']),
-            models.Index(fields=['level', '-date_created']),
+            models.Index(fields=["-date_created"]),
+            models.Index(fields=["level", "-date_created"]),
         ]
 
     def __str__(self):

@@ -4,6 +4,7 @@ Load parsed arXiv records into the database.
 Every paper is upserted in its own transaction keyed on `arxiv_id`, so a run can
 be interrupted or repeated at any point without creating duplicates.
 """
+
 import logging
 from dataclasses import asdict, dataclass
 
@@ -23,8 +24,17 @@ UNCHANGED = "unchanged"
 
 # Scalar fields copied straight from a PaperRecord onto a Paper.
 SCALAR_FIELDS = [
-    "version", "title", "abstract", "published", "updated", "doi",
-    "journal_ref", "comment", "abs_url", "pdf_url", "content_hash",
+    "version",
+    "title",
+    "abstract",
+    "published",
+    "updated",
+    "doi",
+    "journal_ref",
+    "comment",
+    "abs_url",
+    "pdf_url",
+    "content_hash",
 ]
 
 
@@ -98,10 +108,12 @@ def upsert_paper(record: PaperRecord) -> str:
 
         authors = _get_authors(record.authors)
         PaperAuthor.objects.filter(paper=paper).delete()
-        PaperAuthor.objects.bulk_create([
-            PaperAuthor(paper=paper, author=authors[name], position=position)
-            for position, name in enumerate(record.authors)
-        ])
+        PaperAuthor.objects.bulk_create(
+            [
+                PaperAuthor(paper=paper, author=authors[name], position=position)
+                for position, name in enumerate(record.authors)
+            ]
+        )
     return outcome
 
 
@@ -126,8 +138,13 @@ def ingest_records(records: list[PaperRecord], stats: IngestionStats) -> tuple[i
     return created, updated
 
 
-def ingest_from_arxiv(categories: list[str], max_results: int, page_size: int,
-                      incremental: bool = False, client: ArxivClient | None = None) -> IngestionStats:
+def ingest_from_arxiv(
+    categories: list[str],
+    max_results: int,
+    page_size: int,
+    incremental: bool = False,
+    client: ArxivClient | None = None,
+) -> IngestionStats:
     """
     Fetch papers from arXiv (most recently updated first) and store them.
 
@@ -140,8 +157,13 @@ def ingest_from_arxiv(categories: list[str], max_results: int, page_size: int,
         name="arxiv_ingestion",
         json_meta={"categories": categories, "max_results": max_results, "incremental": incremental},
     )
-    logger.info("Starting arXiv ingestion: categories=%s max_results=%d page_size=%d incremental=%s",
-                categories, max_results, page_size, incremental)
+    logger.info(
+        "Starting arXiv ingestion: categories=%s max_results=%d page_size=%d incremental=%s",
+        categories,
+        max_results,
+        page_size,
+        incremental,
+    )
     try:
         for page in client.iter_pages(categories, max_results=max_results, page_size=page_size):
             stats.fetched += len(page.records)

@@ -3,6 +3,7 @@ Parse arXiv Atom feeds into clean, flat records ready for the database.
 
 The feed format is documented at https://info.arxiv.org/help/api/user-manual.html.
 """
+
 import hashlib
 import logging
 import re
@@ -166,10 +167,7 @@ def parse_entry(entry) -> PaperRecord:
     if not authors:
         raise ValueError("no authors")
 
-    categories = unique(
-        clean_text(category.get("term"))
-        for category in entry.findall("atom:category", NS)
-    )
+    categories = unique(clean_text(category.get("term")) for category in entry.findall("atom:category", NS))
     primary_element = entry.find("arxiv:primary_category", NS)
     primary_category = clean_text(primary_element.get("term")) if primary_element is not None else ""
     if not primary_category:

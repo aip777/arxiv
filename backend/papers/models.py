@@ -5,6 +5,7 @@ from basebox.models import TimeStampedModel
 
 class Category(TimeStampedModel):
     """An arXiv subject class such as `cs.AI` or `stat.ML`."""
+
     code = models.CharField(max_length=32, unique=True)
 
     class Meta:
@@ -22,6 +23,7 @@ class Author(TimeStampedModel):
     arXiv does not expose author identifiers, so two people sharing a name are
     merged into one row. That is an accepted limitation for this dataset.
     """
+
     name = models.CharField(max_length=255, unique=True)
 
     class Meta:
@@ -33,14 +35,17 @@ class Author(TimeStampedModel):
 
 class Paper(TimeStampedModel):
     arxiv_id = models.CharField(
-        max_length=64, unique=True,
+        max_length=64,
+        unique=True,
         help_text="arXiv identifier without the version suffix, e.g. 2409.01234",
     )
     version = models.PositiveSmallIntegerField(default=1)
     title = models.TextField()
     abstract = models.TextField()
     primary_category = models.ForeignKey(
-        Category, on_delete=models.PROTECT, related_name="primary_papers",
+        Category,
+        on_delete=models.PROTECT,
+        related_name="primary_papers",
     )
     categories = models.ManyToManyField(Category, related_name="papers")
     authors = models.ManyToManyField(Author, through="PaperAuthor", related_name="papers")
@@ -69,6 +74,7 @@ class Paper(TimeStampedModel):
 
 class PaperAuthor(models.Model):
     """Ordered author list for a paper (first author has position 0)."""
+
     paper = models.ForeignKey(Paper, on_delete=models.CASCADE, related_name="authorships")
     author = models.ForeignKey(Author, on_delete=models.CASCADE, related_name="authorships")
     position = models.PositiveSmallIntegerField()

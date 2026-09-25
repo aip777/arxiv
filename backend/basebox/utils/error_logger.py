@@ -3,12 +3,12 @@ import sys
 import traceback as tb_module
 
 SENSITIVE_PATTERN = re.compile(
-    r'(password|passwd|token|secret|api[_-]?key|authorization|credit.card|ssn)'
+    r"(password|passwd|token|secret|api[_-]?key|authorization|credit.card|ssn)"
     r'["\']?\s*[:=]\s*["\']?[^\s,;"\'}\]]+',
     re.IGNORECASE,
 )
 
-SENSITIVE_REPLACEMENT = r'\1=***FILTERED***'
+SENSITIVE_REPLACEMENT = r"\1=***FILTERED***"
 
 
 def sanitize_text(text):
@@ -20,12 +20,12 @@ def sanitize_text(text):
 def extract_request_info(request):
     if not request:
         return None, None, None
-    path = getattr(request, 'path', None)
-    method = getattr(request, 'method', None)
+    path = getattr(request, "path", None)
+    method = getattr(request, "method", None)
     user = None
     try:
-        req = getattr(request, '_request', request)
-        if hasattr(req, 'user') and req.user.is_authenticated:
+        req = getattr(request, "_request", request)
+        if hasattr(req, "user") and req.user.is_authenticated:
             user = str(req.user)
     except Exception:
         pass
@@ -38,9 +38,7 @@ def create_error_log(level, message, exc=None, path=None, method=None, user=None
 
         trace = None
         if exc:
-            trace = sanitize_text(
-                ''.join(tb_module.format_exception(type(exc), exc, exc.__traceback__))
-            )
+            trace = sanitize_text("".join(tb_module.format_exception(type(exc), exc, exc.__traceback__)))
 
         ErrorLog.objects.create(
             level=level,

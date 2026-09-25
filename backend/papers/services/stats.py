@@ -4,6 +4,7 @@ Aggregations for the charting API. All counting happens in the database.
 Category counts use every category a paper is listed under (not only its
 primary one), since cross-listing is how arXiv expresses topic overlap.
 """
+
 from datetime import date
 
 from django.db.models import Count, IntegerField, Max, Min, OuterRef, Subquery
@@ -110,10 +111,7 @@ def _value_at(rows: list[dict], position: int) -> int:
 
 def authors_per_paper(papers) -> dict:
     author_count = Subquery(
-        PaperAuthor.objects.filter(paper=OuterRef("pk"))
-        .values("paper")
-        .annotate(n=Count("id"))
-        .values("n"),
+        PaperAuthor.objects.filter(paper=OuterRef("pk")).values("paper").annotate(n=Count("id")).values("n"),
         output_field=IntegerField(),
     )
     rows = list(
@@ -145,8 +143,9 @@ def authors_per_paper(papers) -> dict:
     }
 
 
-def build_stats(top_n: int = 10, interval: str = "month",
-                date_from: date | None = None, date_to: date | None = None) -> dict:
+def build_stats(
+    top_n: int = 10, interval: str = "month", date_from: date | None = None, date_to: date | None = None
+) -> dict:
     papers = filtered_papers(date_from, date_to)
     categories = top_categories(papers, top_n)
     series_categories = [row["category"] for row in categories[:MAX_SERIES]]

@@ -5,6 +5,7 @@ Everything else in the RAG pipeline goes through these two functions, which
 keeps the provider in one place and makes the pipeline easy to fake in tests.
 `OPENAI_BASE_URL` can point at any OpenAI-compatible server.
 """
+
 import json
 import logging
 

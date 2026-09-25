@@ -5,6 +5,7 @@ arXiv asks clients to wait at least 3 seconds between requests. When it is
 unhappy it answers with 429/503, and sometimes with 406 from its CDN, so those
 are retried with exponential backoff.
 """
+
 import logging
 import re
 import time
@@ -40,8 +41,16 @@ def build_category_query(categories: list[str]) -> str:
 
 
 class ArxivClient:
-    def __init__(self, base_url=None, delay=None, max_retries=None, timeout=None, session=None,
-                 sleep=time.sleep, clock=time.monotonic):
+    def __init__(
+        self,
+        base_url=None,
+        delay=None,
+        max_retries=None,
+        timeout=None,
+        session=None,
+        sleep=time.sleep,
+        clock=time.monotonic,
+    ):
         self.base_url = base_url or settings.ARXIV_API_URL
         self.delay = settings.ARXIV_REQUEST_DELAY if delay is None else delay
         self.max_retries = settings.ARXIV_MAX_RETRIES if max_retries is None else max_retries
@@ -73,16 +82,19 @@ class ArxivClient:
                 if response.status_code == 200:
                     return response.text
                 if response.status_code not in RETRYABLE_STATUS:
-                    raise ArxivClientError(
-                        f"arXiv returned HTTP {response.status_code}: {response.text[:200]}"
-                    )
+                    raise ArxivClientError(f"arXiv returned HTTP {response.status_code}: {response.text[:200]}")
                 error = f"HTTP {response.status_code}"
 
             if attempt == self.max_retries:
                 raise ArxivClientError(f"arXiv request failed after {attempt + 1} attempts ({error})")
-            backoff = self.delay * (2 ** attempt)
-            logger.warning("arXiv request failed (%s); retrying in %.0fs (attempt %d/%d)",
-                           error, backoff, attempt + 1, self.max_retries)
+            backoff = self.delay * (2**attempt)
+            logger.warning(
+                "arXiv request failed (%s); retrying in %.0fs (attempt %d/%d)",
+                error,
+                backoff,
+                attempt + 1,
+                self.max_retries,
+            )
             self._sleep(backoff)
 
     def fetch_page(self, query: str, start: int, max_results: int) -> FeedPage:
@@ -114,20 +126,23 @@ class ArxivClient:
             retries = 0
             while page.entry_count == 0 and start < page.total_results and retries < EMPTY_PAGE_RETRIES:
                 retries += 1
-                logger.warning("arXiv returned an empty page at start=%d; retrying (%d/%d)",
-                               start, retries, EMPTY_PAGE_RETRIES)
+                logger.warning(
+                    "arXiv returned an empty page at start=%d; retrying (%d/%d)", start, retries, EMPTY_PAGE_RETRIES
+                )
                 page = self.fetch_page(query, start, size)
 
             total = page.total_results
             if page.entry_count == 0:
                 if start < total:
-                    logger.warning("arXiv kept returning empty pages at start=%d although it reports %d results; "
-                                   "stopping early", start, total)
+                    logger.warning(
+                        "arXiv kept returning empty pages at start=%d although it reports %d results; stopping early",
+                        start,
+                        total,
+                    )
                 else:
                     logger.info("No more results from arXiv at start=%d (total=%d)", start, total)
                 return
 
-            logger.info("Fetched %d entries (start=%d, total available=%d)",
-                        page.entry_count, start, total)
+            logger.info("Fetched %d entries (start=%d, total available=%d)", page.entry_count, start, total)
             yield page
             start += page.entry_count
