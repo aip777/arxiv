@@ -22,7 +22,6 @@ CREATED = "created"
 UPDATED = "updated"
 UNCHANGED = "unchanged"
 
-# Scalar fields copied straight from a PaperRecord onto a Paper.
 SCALAR_FIELDS = [
     "version",
     "title",
@@ -54,22 +53,10 @@ class IngestionStats:
         return ", ".join(f"{key}={value}" for key, value in self.as_dict().items())
 
 
-def _get_categories(codes: list[str]) -> dict[str, Category]:
-    existing = {c.code: c for c in Category.objects.filter(code__in=codes)}
-    missing = [Category(code=code) for code in codes if code not in existing]
-    if missing:
-        Category.objects.bulk_create(missing, ignore_conflicts=True)
-        existing = {c.code: c for c in Category.objects.filter(code__in=codes)}
-    return existing
-
-
-def _get_authors(names: list[str]) -> dict[str, Author]:
-    existing = {a.name: a for a in Author.objects.filter(name__in=names)}
-    missing = [Author(name=name) for name in names if name not in existing]
-    if missing:
-        Author.objects.bulk_create(missing, ignore_conflicts=True)
-        existing = {a.name: a for a in Author.objects.filter(name__in=names)}
-    return existing
+def _get_or_create_all(model, field: str, values: list[str]) -> dict:
+    """Return {value: row} for every value, inserting the ones that don't exist yet."""
+    model.objects.bulk_create([model(**{field: value}) for value in values], ignore_conflicts=True)
+    return {getattr(row, field): row for row in model.objects.filter(**{f"{field}__in": values})}
 
 
 def _has_changed(paper: Paper, record: PaperRecord) -> bool:
@@ -91,7 +78,7 @@ def upsert_paper(record: PaperRecord) -> str:
         if paper is not None and not _has_changed(paper, record):
             return UNCHANGED
 
-        categories = _get_categories(record.categories)
+        categories = _get_or_create_all(Category, "code", record.categories)
         values = {name: getattr(record, name) for name in SCALAR_FIELDS}
         values["primary_category"] = categories[record.primary_category]
 
@@ -106,7 +93,7 @@ def upsert_paper(record: PaperRecord) -> str:
 
         paper.categories.set(categories.values())
 
-        authors = _get_authors(record.authors)
+        authors = _get_or_create_all(Author, "name", record.authors)
         PaperAuthor.objects.filter(paper=paper).delete()
         PaperAuthor.objects.bulk_create(
             [

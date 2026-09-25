@@ -31,7 +31,6 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "basebox.middlewares.error_logging_middleware.ErrorLoggingMiddleware",
 ]
 
 ROOT_URLCONF = "pconfig.urls"
@@ -120,5 +119,54 @@ RAG_TOP_K = config("RAG_TOP_K", default=5, cast=int)
 # Cosine distance (0 = identical, 2 = opposite). Hits further away than this are ignored.
 RAG_MAX_DISTANCE = config("RAG_MAX_DISTANCE", default=0.65, cast=float)
 
-from pconfig.logs_config import *  # noqa: E402,F401,F403
-from pconfig.rest_config import *  # noqa: E402,F401,F403
+REST_FRAMEWORK = {
+    # The API is public and read-only apart from /ask, so no authentication is configured.
+    "DEFAULT_AUTHENTICATION_CLASSES": [],
+    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.AllowAny"],
+    "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.ScopedRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": config("THROTTLE_ANON", default="300/minute"),
+        # /ask calls a paid LLM, so it gets a tighter limit.
+        "ask": config("THROTTLE_ASK", default="20/minute"),
+    },
+    "EXCEPTION_HANDLER": "basebox.errors.api_exception_handler",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "arXiv Papers API",
+    "DESCRIPTION": "Aggregated statistics and RAG question answering over arXiv papers.",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+}
+
+LOG_LEVEL = config("LOG_LEVEL", default="INFO")
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "[{asctime}] {levelname} {name} {module}.{funcName}:{lineno} — {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "verbose"},
+        # Errors also go to the ErrorLog table, which is browsable in the admin.
+        "database": {"class": "basebox.errors.DatabaseLogHandler", "level": "ERROR"},
+    },
+    "loggers": {
+        "django": {"handlers": ["console"], "level": "WARNING", "propagate": False},
+        # Unhandled exceptions in views, with the request that caused them.
+        "django.request": {"handlers": ["console", "database"], "level": "ERROR", "propagate": False},
+        **{
+            app: {"handlers": ["console", "database"], "level": LOG_LEVEL, "propagate": False}
+            for app in ("basebox", "papers", "rag")
+        },
+    },
+}

@@ -4,8 +4,6 @@ from basebox.models import TimeStampedModel
 
 
 class Category(TimeStampedModel):
-    """An arXiv subject class such as `cs.AI` or `stat.ML`."""
-
     code = models.CharField(max_length=32, unique=True)
 
     class Meta:
@@ -17,12 +15,7 @@ class Category(TimeStampedModel):
 
 
 class Author(TimeStampedModel):
-    """
-    A paper author, identified by normalized name.
-
-    arXiv does not expose author identifiers, so two people sharing a name are
-    merged into one row. That is an accepted limitation for this dataset.
-    """
+    # arXiv has no author ids, so two people with the same name share a row.
 
     name = models.CharField(max_length=255, unique=True)
 

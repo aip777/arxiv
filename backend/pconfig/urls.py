@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
-from basebox.views.health import HealthView
+from basebox.views import HealthView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -14,5 +14,5 @@ urlpatterns = [
 ]
 
 # Keep error responses JSON, like the rest of the API.
-handler404 = "basebox.views.errors.not_found"
-handler500 = "basebox.views.errors.server_error"
+handler404 = "basebox.views.not_found"
+handler500 = "basebox.views.server_error"

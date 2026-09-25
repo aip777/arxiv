@@ -3,7 +3,7 @@ from datetime import timedelta
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from basebox.models.error_log import ErrorLog
+from basebox.models import ErrorLog
 
 
 class Command(BaseCommand):

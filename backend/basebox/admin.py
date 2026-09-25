@@ -17,7 +17,7 @@ class ScheduledTaskLogAdmin(admin.ModelAdmin):
 class ErrorLogAdmin(admin.ModelAdmin):
     list_display = ["level", "status_code", "short_message", "path", "method", "date_created"]
     list_filter = ["level", "status_code", "method"]
-    search_fields = ["message", "traceback", "path", "user"]
+    search_fields = ["message", "traceback", "path"]
     readonly_fields = [
         "level",
         "status_code",
@@ -25,7 +25,6 @@ class ErrorLogAdmin(admin.ModelAdmin):
         "traceback",
         "path",
         "method",
-        "user",
         "date_created",
         "last_updated",
     ]

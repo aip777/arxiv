@@ -1,10 +1,4 @@
-"""
-Thin wrapper around the OpenAI API for embeddings and chat completions.
-
-Everything else in the RAG pipeline goes through these two functions, which
-keeps the provider in one place and makes the pipeline easy to fake in tests.
-`OPENAI_BASE_URL` can point at any OpenAI-compatible server.
-"""
+"""All OpenAI calls go through here, which keeps the provider in one place and easy to fake in tests."""
 
 import json
 import logging

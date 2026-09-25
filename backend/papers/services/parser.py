@@ -1,8 +1,4 @@
-"""
-Parse arXiv Atom feeds into clean, flat records ready for the database.
-
-The feed format is documented at https://info.arxiv.org/help/api/user-manual.html.
-"""
+"""Feed format: https://info.arxiv.org/help/api/user-manual.html"""
 
 import hashlib
 import logging

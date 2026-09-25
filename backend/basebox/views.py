@@ -1,6 +1,7 @@
 import logging
 
 from django.db import connection
+from django.http import JsonResponse
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.response import Response
@@ -10,8 +11,6 @@ logger = logging.getLogger(__name__)
 
 
 class HealthView(APIView):
-    """Liveness/readiness probe used by docker-compose."""
-
     throttle_classes = []
 
     @extend_schema(exclude=True)
@@ -23,3 +22,11 @@ class HealthView(APIView):
             logger.exception("Health check failed: database unreachable")
             return Response({"status": "error", "database": "unreachable"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         return Response({"status": "ok", "database": "ok"})
+
+
+def not_found(request, exception=None):
+    return JsonResponse({"detail": "Not found."}, status=404)
+
+
+def server_error(request):
+    return JsonResponse({"detail": "An unexpected error occurred."}, status=500)

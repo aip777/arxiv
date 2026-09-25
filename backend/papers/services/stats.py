@@ -1,8 +1,6 @@
 """
-Aggregations for the charting API. All counting happens in the database.
-
-Category counts use every category a paper is listed under (not only its
-primary one), since cross-listing is how arXiv expresses topic overlap.
+Category counts use every category a paper is listed under, not only its
+primary one, since cross-listing is how arXiv expresses topic overlap.
 """
 
 from datetime import date
@@ -14,7 +12,6 @@ from papers.models import Paper, PaperAuthor
 
 INTERVALS = ("day", "week", "month", "year")
 PERIOD_FORMATS = {"day": "%Y-%m-%d", "week": "%Y-%m-%d", "month": "%Y-%m", "year": "%Y"}
-# Keep the time series readable: one line per top category, capped at this many.
 MAX_SERIES = 5
 # Author counts above this are grouped into one "N+" bucket in the distribution.
 MAX_AUTHOR_BUCKET = 10

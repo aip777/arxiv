@@ -250,7 +250,7 @@ docker compose exec api pytest
 pytest
 ```
 
-There are 78 tests covering the parser, the arXiv client (paging, throttling, retries), ingestion (re-runs, updates, failures, reset), the vector search and indexing, both endpoints, and error cases. OpenAI is replaced with a fake in tests, so they run offline in a few seconds.
+The tests cover the parser, the arXiv client (paging, throttling, retries), ingestion (re-runs, updates, failures, reset), the vector search and indexing, both endpoints, and error cases. OpenAI is replaced with a fake in tests, so they run offline in a few seconds.
 
 ## Known limitations
 
